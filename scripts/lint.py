@@ -10,6 +10,12 @@
 
 # Copyright (C) 2008 Evan Martin <martine@danga.com>
 
+# How to use:
+# 1. Set the baseBranch in lib/config.js
+# 2. Set the currentBranch in package.json
+# 3. `npm run init`
+# 4. npm run lint
+
 import os
 import sys
 import re
@@ -27,6 +33,8 @@ def main(args):
   parser.add_option('--filter', action='append', metavar='-x,+y',
                     help='Comma-separated list of cpplint\'s category-filters')
   parser.add_option('--project_root')
+  parser.add_option('--base_branch')
+  parser.add_option('--current_branch')
   auth.add_auth_options(parser)
   options, args = parser.parse_args(args)
   auth_config = auth.extract_auth_config_from_options(options)
@@ -47,8 +55,14 @@ def main(args):
   os.chdir(settings.GetRoot())
   try:
     cl = git_cl.Changelist(auth_config=auth_config)
-    change = cl.GetChange(cl.GetCommonAncestorWithUpstream(), None)
-    files = [f.LocalPath() for f in change.AffectedFiles()]
+    if not options.base_branch:
+      print("Set the base branch in lib/config.js")
+      return 0
+    if not options.base_branch:
+      print("Set the current brave_core branch in package.json")
+      return 0
+    change = git_cl.RunGit(['diff', '--name-only', options.current_branch, options.base_branch])
+    files = change.strip().split()
     if not files:
       print('Cannot lint an empty CL')
       return 0
